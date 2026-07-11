@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: demo-app
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: demo-app
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  # Enable histogram buckets so P95/P99 latency is queryable from Prometheus for
+  # http.server.requests and the shop.* timers.
+  observations:
+    http:
+      server:
+        requests:
+          name: http.server.requests
+  distribution:
+    percentiles-histogram:
+      http.server.requests: true
+      shop.checkout: true
+      shop.inventory: true
+    slo:
+      http.server.requests: 100ms,250ms,500ms,1s,2s,3s,5s
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n"

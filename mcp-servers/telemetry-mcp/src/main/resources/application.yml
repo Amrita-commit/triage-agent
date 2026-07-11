@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: telemetry-mcp
+
+server:
+  port: 8090
+
+telemetry:
+  prometheus-url: ${PROMETHEUS_URL:http://localhost:9090}
+  loki-url: ${LOKI_URL:http://localhost:3100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    dev.copilot: INFO

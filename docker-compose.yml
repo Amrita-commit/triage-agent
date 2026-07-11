@@ -1,0 +1,128 @@
+# Full local stack for the Agentic SRE Copilot.
+#
+# Phase 0 brings up the "victim" demo app plus a local observability stack that
+# stands in for AWS CloudWatch:
+#   Prometheus  -> metrics   (CloudWatch Metrics)
+#   Loki        -> logs      (CloudWatch Logs)
+#   Promtail    -> log shipper (CloudWatch agent)
+#   Grafana     -> dashboards (CloudWatch console)
+#
+# Later phases add the agent services; they are commented in as each phase lands.
+services:
+  demo-app:
+    build:
+      context: .
+      dockerfile: demo-app/Dockerfile
+    image: agentic-sre/demo-app:latest
+    container_name: demo-app
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    labels:
+      # Consumed by Promtail's docker service discovery to tag logs by service.
+      logging: "promtail"
+      service: "demo-app"
+    networks: [copilot]
+
+  telemetry-mcp:
+    build:
+      context: .
+      dockerfile: mcp-servers/telemetry-mcp/Dockerfile
+    image: agentic-sre/telemetry-mcp:latest
+    container_name: telemetry-mcp
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on: [prometheus, loki]
+    labels:
+      logging: "promtail"
+      service: "telemetry-mcp"
+    networks: [copilot]
+
+  diagnostics-agent:
+    build:
+      context: .
+      dockerfile: agents/diagnostics-agent/Dockerfile
+    image: agentic-sre/diagnostics-agent:latest
+    container_name: diagnostics-agent
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COPILOT_MODEL_CHEAP: ${COPILOT_MODEL_CHEAP:-claude-haiku-4-5-20251001}
+      COPILOT_MODEL_PLANNING: ${COPILOT_MODEL_PLANNING:-claude-sonnet-5}
+      TELEMETRY_MCP_SSE_URL: http://telemetry-mcp:8090/sse
+    ports:
+      - "8100:8100"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8100/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on: [telemetry-mcp]
+    labels:
+      logging: "promtail"
+      service: "diagnostics-agent"
+    networks: [copilot]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=6h
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks: [copilot]
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: loki
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    ports:
+      - "3100:3100"
+    networks: [copilot]
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on: [loki]
+    networks: [copilot]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus, loki]
+    networks: [copilot]
+
+networks:
+  copilot:
+    driver: bridge

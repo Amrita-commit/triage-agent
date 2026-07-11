@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>dev.copilot</groupId>
+    <artifactId>agentic-sre-copilot</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Agentic Cloud Incident-Response Copilot</name>
+    <description>Multi-agent AI system that diagnoses infrastructure faults and proposes reviewable remediations.</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- AI orchestration: LangChain4j (chosen over Spring AI). -->
+        <langchain4j.version>1.0.0</langchain4j.version>
+        <langchain4j-integrations.version>1.0.0-beta5</langchain4j-integrations.version>
+        <!-- Our own MCP servers use the framework-neutral official MCP Java SDK. -->
+        <mcp.version>2.0.0</mcp.version>
+    </properties>
+
+    <modules>
+        <module>copilot-core</module>
+        <module>demo-app</module>
+        <module>mcp-servers/telemetry-mcp</module>
+        <module>agents/diagnostics-agent</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- LangChain4j: core is 1.0.0 GA; anthropic/mcp integrations trail at 1.0.0-beta5. -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Official MCP Java SDK BOM (mcp-core, mcp-json-jackson2, ...). -->
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>dev.copilot</groupId>
+                <artifactId>copilot-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

@@ -1,0 +1,81 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "schemaVersion": 39,
+  "title": "Demo App — SRE Copilot",
+  "uid": "demo-app-sre",
+  "tags": ["demo-app", "sre-copilot"],
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "P95 latency by endpoint (s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"demo-app\"}[1m])) by (le, uri))",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate by status (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"demo-app\"}[1m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "5xx error ratio",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"demo-app\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{application=\"demo-app\"}[1m]))",
+          "legendFormat": "5xx ratio"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Injected latency (ms)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "demo_fault_injected_latency_ms", "legendFormat": "latency" }]
+    },
+    {
+      "type": "stat",
+      "title": "Injected error rate (%)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "demo_fault_error_rate_pct", "legendFormat": "error %" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM heap used (bytes)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{application=\"demo-app\",area=\"heap\"})",
+          "legendFormat": "heap used"
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "demo-app logs (Loki)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{ "expr": "{service=\"demo-app\"}" }]
+    }
+  ]
+}

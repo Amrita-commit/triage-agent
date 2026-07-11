@@ -1,0 +1,27 @@
+# Build output
+target/
+*.class
+
+# Secrets / env
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Logs
+*.log
