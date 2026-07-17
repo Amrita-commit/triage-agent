@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: orchestrator
+
+server:
+  port: 8110
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+
+copilot:
+  model:
+    cheap: ${COPILOT_MODEL_CHEAP:claude-haiku-4-5-20251001}
+    planning: ${COPILOT_MODEL_PLANNING:claude-sonnet-5}
+
+terraform:
+  mcp:
+    sse-url: ${TERRAFORM_MCP_SSE_URL:http://localhost:8091/sse}
+
+diagnostics:
+  agent:
+    url: ${DIAGNOSTICS_AGENT_URL:http://localhost:8100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    dev.copilot: INFO

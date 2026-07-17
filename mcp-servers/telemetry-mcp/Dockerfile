@@ -6,7 +6,9 @@ COPY pom.xml .
 COPY copilot-core/pom.xml copilot-core/pom.xml
 COPY demo-app/pom.xml demo-app/pom.xml
 COPY mcp-servers/telemetry-mcp/pom.xml mcp-servers/telemetry-mcp/pom.xml
+COPY mcp-servers/terraform-mcp/pom.xml mcp-servers/terraform-mcp/pom.xml
 COPY agents/diagnostics-agent/pom.xml agents/diagnostics-agent/pom.xml
+COPY agents/orchestrator/pom.xml agents/orchestrator/pom.xml
 RUN mvn -q -pl copilot-core,mcp-servers/telemetry-mcp -am -DskipTests dependency:go-offline || true
 COPY copilot-core/src copilot-core/src
 COPY mcp-servers/telemetry-mcp/src mcp-servers/telemetry-mcp/src

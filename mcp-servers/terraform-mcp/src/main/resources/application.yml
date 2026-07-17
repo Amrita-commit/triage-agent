@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: terraform-mcp
+
+server:
+  port: 8091
+
+terraform:
+  working-dir: ${TERRAFORM_WORKING_DIR:/infra}
+  binary: ${TERRAFORM_BINARY:terraform}
+  timeout-seconds: 120
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    dev.copilot: INFO

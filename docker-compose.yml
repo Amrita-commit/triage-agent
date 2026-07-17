@@ -50,6 +50,31 @@ services:
       service: "telemetry-mcp"
     networks: [copilot]
 
+  terraform-mcp:
+    build:
+      context: .
+      dockerfile: mcp-servers/terraform-mcp/Dockerfile
+    image: agentic-sre/terraform-mcp:latest
+    container_name: terraform-mcp
+    environment:
+      TERRAFORM_WORKING_DIR: /infra
+    volumes:
+      # The Terraform config/state and the Docker socket (so the Docker provider can read
+      # container state for drift detection). Read-only agent — only runs plan/show.
+      - ./infra/local:/infra
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8091:8091"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8091/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    labels:
+      logging: "promtail"
+      service: "terraform-mcp"
+    networks: [copilot]
+
   diagnostics-agent:
     build:
       context: .
@@ -72,6 +97,31 @@ services:
     labels:
       logging: "promtail"
       service: "diagnostics-agent"
+    networks: [copilot]
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: agents/orchestrator/Dockerfile
+    image: agentic-sre/orchestrator:latest
+    container_name: orchestrator
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COPILOT_MODEL_CHEAP: ${COPILOT_MODEL_CHEAP:-claude-haiku-4-5-20251001}
+      COPILOT_MODEL_PLANNING: ${COPILOT_MODEL_PLANNING:-claude-sonnet-5}
+      TERRAFORM_MCP_SSE_URL: http://terraform-mcp:8091/sse
+      DIAGNOSTICS_AGENT_URL: http://diagnostics-agent:8100
+    ports:
+      - "8110:8110"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8110/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on: [diagnostics-agent, terraform-mcp]
+    labels:
+      logging: "promtail"
+      service: "orchestrator"
     networks: [copilot]
 
   prometheus:

@@ -33,7 +33,9 @@
         <module>copilot-core</module>
         <module>demo-app</module>
         <module>mcp-servers/telemetry-mcp</module>
+        <module>mcp-servers/terraform-mcp</module>
         <module>agents/diagnostics-agent</module>
+        <module>agents/orchestrator</module>
     </modules>
 
     <dependencyManagement>

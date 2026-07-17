@@ -20,8 +20,8 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 0 | Skeleton + local observability stack + demo app with fault injection | ✅ implemented |
 | 1 | Telemetry abstraction (`TelemetryProvider`) + Prometheus/Loki impl + `telemetry-mcp` MCP server | ✅ implemented |
 | 2 | Diagnostics agent (LangChain4j + Claude): agentic loop, 15-tool-call cap, evidence-cited `Diagnosis`, model routing, tracing | ✅ implemented¹ |
-| 3 | Orchestrator + infra/drift agent + terraform-mcp | ⏳ next |
-| 4 | Remediation agent + approval gate | ⬜ |
+| 3 | Orchestrator (classify → delegate → merge) + infra/drift agent + `terraform-mcp` (drift detection) | ✅ implemented¹ |
+| 4 | Remediation agent + approval gate | ⏳ next |
 | 5 | Postmortem agent | ⬜ |
 | 6 | Eval harness | ⬜ |
 | 7 | Observability, docs, polish | ⬜ |
@@ -172,6 +172,26 @@ plus a `traceId`; fetch the full trace (every LLM + tool call, tokens, latency, 
 `GET /traces/{traceId}`. Guardrails enforced **in code**: read-only tools only, a hard 15-tool-call
 budget, and a `ModelRouter` that keeps cheap steps (log summarization) on Haiku while planning uses
 Sonnet. Requires `ANTHROPIC_API_KEY`; reads telemetry via `telemetry-mcp` over MCP.
+
+## orchestrator + infra agent (Phase 3)
+
+The **orchestrator** (`POST /incident`, port `8110`) classifies an incident with one Claude call,
+then delegates: to the diagnostics agent (over HTTP) for application faults and/or the **infra/drift
+agent** for infrastructure drift, and merges the findings into an `OrchestratedFindings`.
+
+```bash
+curl -s -X POST http://localhost:8110/incident \
+  -H 'Content-Type: application/json' \
+  -d '{"alert":"checkout is slow and someone may have changed the container config"}'
+```
+
+The infra agent calls **`terraform-mcp`** (port `8091`, tools `read_state` + `plan_diff`), which runs
+a read-only, refresh-only `terraform plan` against [`infra/local`](infra/local/) and returns a
+structured `DriftReport`. Delegation is resilient — if one sub-agent fails (e.g. the diagnostics
+agent has no API credit), the other's findings are still returned. To see drift detection end-to-end,
+follow [`infra/local/README.md`](infra/local/README.md) (build image → `terraform apply` → change the
+container out-of-band → the agent reports the drift). The agent **never applies** — reconciliation
+becomes a proposed diff in Phase 4.
 
 ## Repository layout
 
