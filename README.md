@@ -21,8 +21,8 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 1 | Telemetry abstraction (`TelemetryProvider`) + Prometheus/Loki impl + `telemetry-mcp` MCP server | ✅ implemented |
 | 2 | Diagnostics agent (LangChain4j + Claude): agentic loop, 15-tool-call cap, evidence-cited `Diagnosis`, model routing, tracing | ✅ implemented¹ |
 | 3 | Orchestrator (classify → delegate → merge) + infra/drift agent + `terraform-mcp` (drift detection) | ✅ implemented¹ |
-| 4 | Remediation agent + approval gate | ⏳ next |
-| 5 | Postmortem agent | ⬜ |
+| 4 | Remediation agent (diff proposals) + approval UI + human-gated branch/PR creation | ✅ implemented¹ |
+| 5 | Postmortem agent | ⏳ next |
 | 6 | Eval harness | ⬜ |
 | 7 | Observability, docs, polish | ⬜ |
 | 8 | AWS deployment mapping (stub only) | ⬜ |
@@ -192,6 +192,28 @@ agent has no API credit), the other's findings are still returned. To see drift 
 follow [`infra/local/README.md`](infra/local/README.md) (build image → `terraform apply` → change the
 container out-of-band → the agent reports the drift). The agent **never applies** — reconciliation
 becomes a proposed diff in Phase 4.
+
+## remediation agent + approval gate (Phase 4)
+
+The **remediation agent** (`POST /propose`, port `8120`) consumes a diagnosis/drift plus the current
+content of a config file and proposes a **minimal fix as a reviewable diff** — it computes a real
+unified diff and rollback notes, and **never applies anything**. It can auto-submit the proposal to
+the approval queue.
+
+The **approval UI** (port `8130`, open http://localhost:8130) is the human gate: a queue of proposed
+remediations with their diff, risk, and rollback notes. **Approve → a `remediation/*` git branch is
+created with the change (via JGit) for review; Reject → nothing happens.** There is deliberately no
+"apply" path anywhere — the only way a proposal becomes real is a human clicking Approve, and even
+then it is a branch/PR, never a live change. This is enforced in code (verified by tests: approval
+publishes exactly once, reject never publishes).
+
+```bash
+# propose a fix (needs Anthropic credits); with APPROVAL_UI_URL set it auto-enqueues
+curl -s -X POST http://localhost:8120/propose -H 'Content-Type: application/json' -d '{
+  "incidentId":"inc-1","problem":"Drift: LOG_LEVEL changed to DEBUG",
+  "targetPath":"infra/local/main.tf","currentContent":"...current file..."}'
+# then review + approve at http://localhost:8130
+```
 
 ## Repository layout
 

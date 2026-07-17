@@ -36,6 +36,8 @@
         <module>mcp-servers/terraform-mcp</module>
         <module>agents/diagnostics-agent</module>
         <module>agents/orchestrator</module>
+        <module>agents/remediation-agent</module>
+        <module>approval-ui</module>
     </modules>
 
     <dependencyManagement>

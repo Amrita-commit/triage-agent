@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: approval-ui
+
+server:
+  port: 8130
+
+approval:
+  # Git repo where approved remediations are committed to a branch (mount your IaC repo here).
+  repo-path: ${APPROVAL_REPO_PATH:/repo}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    dev.copilot: INFO

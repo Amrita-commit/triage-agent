@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SRE Copilot — Approval Queue</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 0; background: #0f1116; color: #e6e6e6; }
+    header { padding: 16px 24px; background: #161923; border-bottom: 1px solid #262a36; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    header .sub { color: #8b93a7; font-size: 13px; }
+    button { font: inherit; border: 0; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+    button.refresh { background: #262a36; color: #e6e6e6; margin-left: auto; }
+    main { padding: 24px; max-width: 900px; margin: 0 auto; }
+    .empty { color: #8b93a7; padding: 40px; text-align: center; }
+    .card { background: #161923; border: 1px solid #262a36; border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
+    .card h2 { font-size: 16px; margin: 0; }
+    .card .head { padding: 14px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .meta { color: #8b93a7; font-size: 13px; }
+    .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+    .risk-LOW { background: #17331f; color: #6ee7a0; }
+    .risk-MEDIUM { background: #33290f; color: #f5c451; }
+    .risk-HIGH { background: #3a1720; color: #ff8098; }
+    .st-PENDING { background: #1f2740; color: #8fb2ff; }
+    .st-APPROVED { background: #17331f; color: #6ee7a0; }
+    .st-REJECTED { background: #3a1720; color: #ff8098; }
+    .body { padding: 0 16px 16px; }
+    .rationale { color: #c5ccdb; margin: 4px 0 12px; }
+    pre { background: #0b0d12; border: 1px solid #262a36; border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 13px; }
+    pre .add { color: #6ee7a0; } pre .del { color: #ff8098; } pre .hunk { color: #8fb2ff; }
+    .rollback { font-size: 13px; color: #c5ccdb; margin-top: 10px; }
+    .actions { display: flex; gap: 10px; margin-top: 14px; }
+    button.approve { background: #1c7a3f; color: #fff; }
+    button.reject { background: #7a1c2f; color: #fff; }
+    .result { margin-top: 10px; font-size: 13px; color: #6ee7a0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛡️ SRE Copilot — Approval Queue</h1>
+    <span class="sub">Agents propose · humans approve · nothing auto-applies</span>
+    <button class="refresh" onclick="load()">Refresh</button>
+  </header>
+  <main id="app"><div class="empty">Loading…</div></main>
+
+  <script>
+    const esc = s => (s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    function colorDiff(diff) {
+      return esc(diff).split('\n').map(l => {
+        if (l.startsWith('+') && !l.startsWith('+++')) return `<span class="add">${l}</span>`;
+        if (l.startsWith('-') && !l.startsWith('---')) return `<span class="del">${l}</span>`;
+        if (l.startsWith('@@')) return `<span class="hunk">${l}</span>`;
+        return l;
+      }).join('\n');
+    }
+    async function load() {
+      const app = document.getElementById('app');
+      let items;
+      try { items = await (await fetch('/api/approvals')).json(); }
+      catch (e) { app.innerHTML = `<div class="empty">Could not reach the API.</div>`; return; }
+      if (!items.length) { app.innerHTML = `<div class="empty">No proposed remediations yet.</div>`; return; }
+      app.innerHTML = items.map(r => {
+        const m = r.remediation;
+        const pending = r.status === 'PENDING';
+        return `<div class="card">
+          <div class="head">
+            <h2>${esc(m.title)}</h2>
+            <span class="badge risk-${m.risk}">${m.risk} risk</span>
+            <span class="badge st-${r.status}">${r.status}</span>
+            <span class="meta">${esc(m.targetPath)} · incident ${esc(m.sourceIncidentId)}</span>
+          </div>
+          <div class="body">
+            <div class="rationale">${esc(m.rationale)}</div>
+            <pre>${colorDiff(m.unifiedDiff)}</pre>
+            <div class="rollback"><strong>Rollback:</strong> ${esc(m.rollbackNotes)}</div>
+            ${pending ? `<div class="actions">
+                <button class="approve" onclick="decide('${m.id}','approve')">Approve → open branch</button>
+                <button class="reject" onclick="decide('${m.id}','reject')">Reject</button>
+              </div>` : ''}
+            ${r.resultRef ? `<div class="result">✔ Published to branch <code>${esc(r.resultRef)}</code></div>` : ''}
+            ${r.decisionNote ? `<div class="rollback"><strong>Note:</strong> ${esc(r.decisionNote)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+    async function decide(id, action) {
+      const note = prompt(action === 'approve' ? 'Approval note (optional):' : 'Reason for rejection:') ?? '';
+      const res = await fetch(`/api/approvals/${id}/${action}`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({note})
+      });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); alert('Failed: ' + (e.error || res.status)); }
+      load();
+    }
+    load();
+    setInterval(load, 5000);
+  </script>
+</body>
+</html>

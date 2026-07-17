@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: remediation-agent
+
+server:
+  port: 8120
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+
+copilot:
+  model:
+    cheap: ${COPILOT_MODEL_CHEAP:claude-haiku-4-5-20251001}
+    planning: ${COPILOT_MODEL_PLANNING:claude-sonnet-5}
+
+# When set, proposed remediations are auto-submitted to the approval-ui queue.
+approval:
+  ui:
+    url: ${APPROVAL_UI_URL:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    dev.copilot: INFO

@@ -124,6 +124,54 @@ services:
       service: "orchestrator"
     networks: [copilot]
 
+  approval-ui:
+    build:
+      context: .
+      dockerfile: approval-ui/Dockerfile
+    image: agentic-sre/approval-ui:latest
+    container_name: approval-ui
+    environment:
+      # Approving a remediation commits it to a branch in this git repo (the project itself,
+      # mounted read-write). Review/delete the remediation/* branches as you like.
+      APPROVAL_REPO_PATH: /repo
+    volumes:
+      - .:/repo
+    ports:
+      - "8130:8130"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8130/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    labels:
+      logging: "promtail"
+      service: "approval-ui"
+    networks: [copilot]
+
+  remediation-agent:
+    build:
+      context: .
+      dockerfile: agents/remediation-agent/Dockerfile
+    image: agentic-sre/remediation-agent:latest
+    container_name: remediation-agent
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COPILOT_MODEL_CHEAP: ${COPILOT_MODEL_CHEAP:-claude-haiku-4-5-20251001}
+      COPILOT_MODEL_PLANNING: ${COPILOT_MODEL_PLANNING:-claude-sonnet-5}
+      APPROVAL_UI_URL: http://approval-ui:8130
+    ports:
+      - "8120:8120"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8120/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on: [approval-ui]
+    labels:
+      logging: "promtail"
+      service: "remediation-agent"
+    networks: [copilot]
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus
