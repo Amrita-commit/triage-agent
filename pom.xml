@@ -37,6 +37,7 @@
         <module>agents/diagnostics-agent</module>
         <module>agents/orchestrator</module>
         <module>agents/remediation-agent</module>
+        <module>agents/postmortem-agent</module>
         <module>approval-ui</module>
     </modules>
 

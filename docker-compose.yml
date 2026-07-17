@@ -172,6 +172,32 @@ services:
       service: "remediation-agent"
     networks: [copilot]
 
+  postmortem-agent:
+    build:
+      context: .
+      dockerfile: agents/postmortem-agent/Dockerfile
+    image: agentic-sre/postmortem-agent:latest
+    container_name: postmortem-agent
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COPILOT_MODEL_CHEAP: ${COPILOT_MODEL_CHEAP:-claude-haiku-4-5-20251001}
+      COPILOT_MODEL_PLANNING: ${COPILOT_MODEL_PLANNING:-claude-sonnet-5}
+      POSTMORTEM_OUTPUT_DIR: /out
+    volumes:
+      # Generated postmortems land in the repo's docs/incidents on the host.
+      - ./docs/incidents:/out
+    ports:
+      - "8140:8140"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8140/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    labels:
+      logging: "promtail"
+      service: "postmortem-agent"
+    networks: [copilot]
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus

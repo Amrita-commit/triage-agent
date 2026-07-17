@@ -22,8 +22,8 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 2 | Diagnostics agent (LangChain4j + Claude): agentic loop, 15-tool-call cap, evidence-cited `Diagnosis`, model routing, tracing | ✅ implemented¹ |
 | 3 | Orchestrator (classify → delegate → merge) + infra/drift agent + `terraform-mcp` (drift detection) | ✅ implemented¹ |
 | 4 | Remediation agent (diff proposals) + approval UI + human-gated branch/PR creation | ✅ implemented¹ |
-| 5 | Postmortem agent | ⏳ next |
-| 6 | Eval harness | ⬜ |
+| 5 | Postmortem agent — timeline from traces, root cause, prevention → Markdown in `docs/incidents/` | ✅ implemented¹ |
+| 6 | Eval harness | ⏳ next |
 | 7 | Observability, docs, polish | ⬜ |
 | 8 | AWS deployment mapping (stub only) | ⬜ |
 
@@ -214,6 +214,16 @@ curl -s -X POST http://localhost:8120/propose -H 'Content-Type: application/json
   "targetPath":"infra/local/main.tf","currentContent":"...current file..."}'
 # then review + approve at http://localhost:8130
 ```
+
+## postmortem agent (Phase 5)
+
+Once an incident is resolved, the **postmortem agent** (`POST /postmortem`, port `8140`) turns the
+orchestrated findings + agent traces into a Markdown postmortem written to
+[`docs/incidents/`](docs/incidents/): an executive summary, a **timeline built from the traces**
+(every row references the trace id it came from), root cause, the evidence, any infrastructure
+drift, the approved remediation diff, and prevention items. The narrative gracefully degrades — if
+the LLM call fails (e.g. no API credit), the postmortem is still produced from the structured facts,
+so the timeline and evidence are never lost.
 
 ## Repository layout
 
