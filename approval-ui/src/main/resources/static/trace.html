@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SRE Copilot — Trace Viewer</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 0; background: #0f1116; color: #e6e6e6; }
+    header { padding: 16px 24px; background: #161923; border-bottom: 1px solid #262a36; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    a { color: #8fb2ff; }
+    main { padding: 24px; max-width: 960px; margin: 0 auto; }
+    input, select, button { font: inherit; border-radius: 6px; padding: 7px 10px; border: 1px solid #2a2f3d; background: #0b0d12; color: #e6e6e6; }
+    button { background: #262a36; cursor: pointer; border: 0; }
+    .totals { display: flex; gap: 18px; flex-wrap: wrap; margin: 16px 0; }
+    .tile { background: #161923; border: 1px solid #262a36; border-radius: 10px; padding: 12px 16px; min-width: 120px; }
+    .tile .n { font-size: 22px; font-weight: 700; }
+    .tile .l { color: #8b93a7; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #20242f; vertical-align: top; font-size: 13px; }
+    th { color: #8b93a7; font-weight: 600; }
+    .kind-llm { color: #f5c451; } .kind-tool { color: #6ee7a0; } .err { color: #ff8098; }
+    code { background: #0b0d12; padding: 1px 5px; border-radius: 4px; }
+    .empty { color: #8b93a7; padding: 30px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔎 Trace Viewer</h1>
+    <a href="/">← approvals</a>
+    <span style="margin-left:auto"></span>
+    <select id="source"></select>
+    <input id="id" placeholder="incident / trace id" size="36"/>
+    <button onclick="load()">Load trace</button>
+  </header>
+  <main id="app"><div class="empty">Pick a source, paste a trace id, and load.</div></main>
+
+  <script>
+    const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const qp = new URLSearchParams(location.search);
+
+    async function loadSources() {
+      const sel = document.getElementById('source');
+      try {
+        const sources = await (await fetch('/api/trace/sources')).json();
+        sel.innerHTML = sources.map(s => `<option value="${s}">${s}</option>`).join('');
+      } catch (e) { sel.innerHTML = '<option>diagnostics</option>'; }
+      if (qp.get('source')) sel.value = qp.get('source');
+      if (qp.get('id')) { document.getElementById('id').value = qp.get('id'); load(); }
+    }
+
+    async function load() {
+      const source = document.getElementById('source').value;
+      const id = document.getElementById('id').value.trim();
+      const app = document.getElementById('app');
+      if (!id) { app.innerHTML = '<div class="empty">Enter a trace id.</div>'; return; }
+      let t;
+      try {
+        const res = await fetch(`/api/trace?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`);
+        if (!res.ok) throw new Error('not found');
+        t = await res.json();
+      } catch (e) { app.innerHTML = `<div class="empty">No trace found for <code>${esc(id)}</code> in <code>${esc(source)}</code>.</div>`; return; }
+      render(app, t);
+    }
+
+    function render(app, t) {
+      const llm = (t.llmCalls || []).map(c => ({
+        at: c.timestamp, kind: 'llm', label: 'llm:' + (c.taskType || ''),
+        detail: `${c.model} — ${(c.inputTokens||0)+(c.outputTokens||0)} tokens, $${(c.costUsd||0).toFixed(4)}, ${c.latencyMs}ms`,
+        err: false, cost: c.costUsd||0, tokens: (c.inputTokens||0)+(c.outputTokens||0)
+      }));
+      const tool = (t.toolCalls || []).map(c => ({
+        at: c.timestamp, kind: 'tool', label: 'tool:' + c.tool,
+        detail: `${esc(c.arguments||'')} → ${esc(c.resultPreview||'')}`, err: !!c.error, cost: 0, tokens: 0
+      }));
+      const rows = [...llm, ...tool].sort((a,b) => (a.at||'').localeCompare(b.at||''));
+      const totalTokens = llm.reduce((s,c)=>s+c.tokens,0);
+      const totalCost = llm.reduce((s,c)=>s+c.cost,0);
+
+      app.innerHTML = `
+        <p><strong>${esc(t.agent)}</strong> · incident <code>${esc(t.incident)}</code> · trace <code>${esc(t.traceId)}</code></p>
+        <div class="totals">
+          <div class="tile"><div class="n">${tool.length}</div><div class="l">tool calls</div></div>
+          <div class="tile"><div class="n">${llm.length}</div><div class="l">llm calls</div></div>
+          <div class="tile"><div class="n">${totalTokens.toLocaleString()}</div><div class="l">tokens</div></div>
+          <div class="tile"><div class="n">$${totalCost.toFixed(4)}</div><div class="l">est. cost</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Time</th><th>Step</th><th>Detail</th></tr></thead>
+          <tbody>${rows.map(r => `<tr>
+            <td>${esc(r.at)}</td>
+            <td class="kind-${r.kind}">${esc(r.label)}${r.err?' <span class="err">⚠</span>':''}</td>
+            <td>${r.detail}</td></tr>`).join('')}</tbody>
+        </table>`;
+    }
+    loadSources();
+  </script>
+</body>
+</html>

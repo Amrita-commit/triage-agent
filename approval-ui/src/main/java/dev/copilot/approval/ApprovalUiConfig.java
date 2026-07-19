@@ -1,12 +1,14 @@
 package dev.copilot.approval;
 
+import dev.copilot.approval.trace.TraceProxyService;
+import dev.copilot.approval.trace.TraceSourcesProperties;
 import dev.copilot.core.approval.ApprovalStore;
 import dev.copilot.core.approval.InMemoryApprovalStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Wires the approval queue and the git-branch publisher used on approval. */
+/** Wires the approval queue, the git-branch publisher used on approval, and the trace viewer proxy. */
 @Configuration
 public class ApprovalUiConfig {
 
@@ -27,5 +29,10 @@ public class ApprovalUiConfig {
     @Bean
     ApprovalService approvalService(ApprovalStore store, RemediationPublisher publisher) {
         return new ApprovalService(store, publisher);
+    }
+
+    @Bean
+    TraceProxyService traceProxyService(TraceSourcesProperties props) {
+        return new TraceProxyService(props.sources());
     }
 }

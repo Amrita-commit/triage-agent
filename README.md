@@ -24,8 +24,31 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 4 | Remediation agent (diff proposals) + approval UI + human-gated branch/PR creation | ✅ implemented¹ |
 | 5 | Postmortem agent — timeline from traces, root cause, prevention → Markdown in `docs/incidents/` | ✅ implemented¹ |
 | 6 | Eval harness — 20 YAML fault scenarios, runner scores root-cause/cost/tool-calls → Markdown scorecard | ✅ implemented¹ |
-| 7 | Observability, docs, polish | ⏳ next |
-| 8 | AWS deployment mapping (stub only) | ⬜ |
+| 7 | Trace viewer in approval UI + architecture/guardrails/failure-analysis docs | ✅ implemented¹ |
+| 8 | AWS deployment mapping (stub only) | ⏳ next |
+
+---
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+    alert([alert]) --> orch[orchestrator]
+    orch --> diag[diagnostics-agent] -->|MCP| tmcp[telemetry-mcp] --> obs[(Prometheus/Loki)]
+    orch --> infra[infra agent] -->|MCP| tfmcp[terraform-mcp] --> tf[(Terraform)]
+    diag --> rem[remediation-agent] --> gate{{approval-ui<br/>HUMAN GATE}}
+    gate -->|approve| pr[[git branch / PR]]
+    diag --> pm[postmortem-agent] --> md[[docs/incidents]]
+    classDef g fill:#7a1c2f,stroke:#ff8098,color:#fff;
+    class gate g;
+```
+
+Read-only agents observe via MCP tools; the remediation agent only *proposes* a diff; a human
+approves before anything becomes a branch/PR. Full details:
+
+- **[docs/architecture.md](docs/architecture.md)** — components, sequence diagrams, model routing
+- **[docs/guardrails.md](docs/guardrails.md)** — the read-only + human-gate guarantees (enforced in code)
+- **[docs/failure-analysis.md](docs/failure-analysis.md)** — honest failure modes and limitations
 
 ---
 
@@ -205,7 +228,9 @@ remediations with their diff, risk, and rollback notes. **Approve → a `remedia
 created with the change (via JGit) for review; Reject → nothing happens.** There is deliberately no
 "apply" path anywhere — the only way a proposal becomes real is a human clicking Approve, and even
 then it is a branch/PR, never a live change. This is enforced in code (verified by tests: approval
-publishes exactly once, reject never publishes).
+publishes exactly once, reject never publishes). The UI also has a **trace viewer**
+(http://localhost:8130/trace.html) that renders any agent's trace for an incident — every LLM + tool
+call with tokens and cost — fetched via a same-origin, whitelisted proxy.
 
 ```bash
 # propose a fix (needs Anthropic credits); with APPROVAL_UI_URL set it auto-enqueues

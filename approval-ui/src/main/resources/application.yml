@@ -9,6 +9,14 @@ approval:
   # Git repo where approved remediations are committed to a branch (mount your IaC repo here).
   repo-path: ${APPROVAL_REPO_PATH:/repo}
 
+# Whitelisted agent trace sources for the trace viewer (name -> base URL).
+trace:
+  sources:
+    diagnostics: ${DIAGNOSTICS_AGENT_URL:http://diagnostics-agent:8100}
+    orchestrator: ${ORCHESTRATOR_URL:http://orchestrator:8110}
+    remediation: ${REMEDIATION_AGENT_URL:http://remediation-agent:8120}
+    postmortem: ${POSTMORTEM_AGENT_URL:http://postmortem-agent:8140}
+
 management:
   endpoints:
     web:

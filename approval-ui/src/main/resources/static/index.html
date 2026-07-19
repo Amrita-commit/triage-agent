@@ -40,6 +40,7 @@
   <header>
     <h1>🛡️ SRE Copilot — Approval Queue</h1>
     <span class="sub">Agents propose · humans approve · nothing auto-applies</span>
+    <a href="/trace.html" style="margin-left:auto;color:#8fb2ff">🔎 Trace viewer</a>
     <button class="refresh" onclick="load()">Refresh</button>
   </header>
   <main id="app"><div class="empty">Loading…</div></main>
@@ -68,7 +69,8 @@
             <h2>${esc(m.title)}</h2>
             <span class="badge risk-${m.risk}">${m.risk} risk</span>
             <span class="badge st-${r.status}">${r.status}</span>
-            <span class="meta">${esc(m.targetPath)} · incident ${esc(m.sourceIncidentId)}</span>
+            <span class="meta">${esc(m.targetPath)} · incident ${esc(m.sourceIncidentId)}
+              · <a href="/trace.html?source=diagnostics&id=${encodeURIComponent(m.sourceIncidentId)}">view trace</a></span>
           </div>
           <div class="body">
             <div class="rationale">${esc(m.rationale)}</div>
