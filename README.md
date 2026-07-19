@@ -25,7 +25,7 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 5 | Postmortem agent — timeline from traces, root cause, prevention → Markdown in `docs/incidents/` | ✅ implemented¹ |
 | 6 | Eval harness — 20 YAML fault scenarios, runner scores root-cause/cost/tool-calls → Markdown scorecard | ✅ implemented¹ |
 | 7 | Trace viewer in approval UI + architecture/guardrails/failure-analysis docs | ✅ implemented¹ |
-| 8 | AWS deployment mapping (stub only) | ⏳ next |
+| 8 | AWS deployment mapping ([`infra/aws/README.md`](infra/aws/README.md)) — docs-only stub, as planned | ✅ documented |
 
 ---
 
