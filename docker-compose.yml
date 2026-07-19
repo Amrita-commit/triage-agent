@@ -198,6 +198,26 @@ services:
       service: "postmortem-agent"
     networks: [copilot]
 
+  # On-demand eval harness (does not auto-start). Run it with:
+  #   docker compose run --rm evals
+  evals:
+    build:
+      context: .
+      dockerfile: evals/Dockerfile
+    image: agentic-sre/evals:latest
+    container_name: evals
+    profiles: ["evals"]
+    environment:
+      DEMO_APP_URL: http://demo-app:8080
+      DIAGNOSTICS_AGENT_URL: http://diagnostics-agent:8100
+      EVALS_SCENARIOS_DIR: /work/evals/scenarios
+      EVALS_RESULTS_DIR: /work/evals/results
+    volumes:
+      # Scenarios are read from here; the scorecard is written back to the host.
+      - ./evals:/work/evals
+    depends_on: [demo-app, diagnostics-agent]
+    networks: [copilot]
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: prometheus

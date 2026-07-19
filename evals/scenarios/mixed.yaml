@@ -1,0 +1,70 @@
+# Additional and less-obvious scenarios (varied phrasing to test the agent's inference).
+- id: latency-inventory-4000
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 4000 }
+  drive: { path: /inventory, method: GET, count: 6 }
+  alert: "Inventory API P99 spiking to 4s"
+  expectedRootCause: "injected latency on inventory"
+  expectedComponent: demo-app
+  keywords: [latency, inventory]
+
+- id: errors-inventory-100
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 100 }
+  drive: { path: /inventory, method: GET, count: 10 }
+  alert: "Inventory endpoint down — every call returns an error"
+  expectedRootCause: "injected error rate on inventory"
+  expectedComponent: demo-app
+  keywords: [error, inventory]
+
+- id: latency-checkout-slow-vague
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 3000 }
+  drive: { path: /checkout, method: POST, count: 8 }
+  alert: "Customers complaining checkout takes forever"
+  expectedRootCause: "injected latency in checkout (inferred from slowness)"
+  expectedComponent: demo-app
+  keywords: [latency]
+
+- id: memleak-384
+  faultType: memory-leak
+  endpoint: /faults/memory-leak
+  params: { mb: 384 }
+  drive: { path: /inventory, method: GET, count: 5 }
+  alert: "Sustained heap growth, demo-app memory not being reclaimed"
+  expectedRootCause: "injected memory leak"
+  expectedComponent: demo-app
+  keywords: [memory]
+
+- id: errors-checkout-70
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 70 }
+  drive: { path: /checkout, method: POST, count: 12 }
+  alert: "Majority of checkout requests failing with server errors"
+  expectedRootCause: "injected error rate on checkout"
+  expectedComponent: demo-app
+  keywords: [error, checkout]
+
+- id: latency-checkout-3500
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 3500 }
+  drive: { path: /checkout, method: POST, count: 7 }
+  alert: "Checkout SLO breach: P95 latency 3.5s"
+  expectedRootCause: "injected latency in checkout"
+  expectedComponent: demo-app
+  keywords: [latency, checkout]
+
+- id: errors-checkout-40
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 40 }
+  drive: { path: /checkout, method: POST, count: 12 }
+  alert: "Checkout success rate dropped to ~60%"
+  expectedRootCause: "injected error rate on checkout"
+  expectedComponent: demo-app
+  keywords: [error]

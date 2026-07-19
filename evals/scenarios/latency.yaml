@@ -1,0 +1,50 @@
+# Latency fault scenarios: injected artificial latency on the demo app's endpoints.
+- id: latency-checkout-3000
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 3000 }
+  drive: { path: /checkout, method: POST, count: 8 }
+  alert: "P95 latency on checkout > 2s"
+  expectedRootCause: "artificial latency injected in the checkout handler"
+  expectedComponent: demo-app
+  keywords: [latency, checkout]
+
+- id: latency-checkout-5000
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 5000 }
+  drive: { path: /checkout, method: POST, count: 6 }
+  alert: "Checkout requests timing out, users report the app is very slow"
+  expectedRootCause: "severe injected latency in checkout"
+  expectedComponent: demo-app
+  keywords: [latency, checkout]
+
+- id: latency-checkout-1500
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 1500 }
+  drive: { path: /checkout, method: POST, count: 10 }
+  alert: "Checkout latency creeping up above 1s"
+  expectedRootCause: "moderate injected latency in checkout"
+  expectedComponent: demo-app
+  keywords: [latency]
+
+- id: latency-inventory-3000
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 3000 }
+  drive: { path: /inventory, method: GET, count: 8 }
+  alert: "Inventory page is loading slowly, P95 well above SLO"
+  expectedRootCause: "injected latency affecting the inventory endpoint"
+  expectedComponent: demo-app
+  keywords: [latency, inventory]
+
+- id: latency-checkout-2500
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 2500 }
+  drive: { path: /checkout, method: POST, count: 8 }
+  alert: "Latency alert firing on checkout, P95 ~2.5s"
+  expectedRootCause: "injected latency in checkout handler"
+  expectedComponent: demo-app
+  keywords: [latency, checkout]

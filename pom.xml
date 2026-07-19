@@ -39,6 +39,7 @@
         <module>agents/remediation-agent</module>
         <module>agents/postmortem-agent</module>
         <module>approval-ui</module>
+        <module>evals</module>
     </modules>
 
     <dependencyManagement>

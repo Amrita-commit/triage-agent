@@ -1,0 +1,30 @@
+# Memory-leak fault scenarios: injected heap retention on the demo app.
+- id: memleak-256
+  faultType: memory-leak
+  endpoint: /faults/memory-leak
+  params: { mb: 256 }
+  drive: { path: /inventory, method: GET, count: 5 }
+  alert: "demo-app heap usage climbing steadily, GC pressure rising"
+  expectedRootCause: "injected memory leak retaining heap"
+  expectedComponent: demo-app
+  keywords: [memory]
+
+- id: memleak-512
+  faultType: memory-leak
+  endpoint: /faults/memory-leak
+  params: { mb: 512 }
+  drive: { path: /inventory, method: GET, count: 5 }
+  alert: "JVM heap for demo-app near limit, risk of OOM"
+  expectedRootCause: "large injected memory leak"
+  expectedComponent: demo-app
+  keywords: [memory, heap]
+
+- id: memleak-128
+  faultType: memory-leak
+  endpoint: /faults/memory-leak
+  params: { mb: 128 }
+  drive: { path: /inventory, method: GET, count: 5 }
+  alert: "Gradual memory growth observed on demo-app"
+  expectedRootCause: "injected memory leak"
+  expectedComponent: demo-app
+  keywords: [memory]

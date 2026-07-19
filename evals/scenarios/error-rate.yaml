@@ -1,0 +1,50 @@
+# Error-rate fault scenarios: injected 5xx failures on the demo app.
+- id: errors-checkout-100
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 100 }
+  drive: { path: /checkout, method: POST, count: 10 }
+  alert: "Checkout is returning 500s for every request"
+  expectedRootCause: "injected error rate causing checkout to fail"
+  expectedComponent: demo-app
+  keywords: [error, checkout]
+
+- id: errors-checkout-50
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 50 }
+  drive: { path: /checkout, method: POST, count: 12 }
+  alert: "Elevated 5xx error rate on checkout (~50%)"
+  expectedRootCause: "injected error rate on checkout"
+  expectedComponent: demo-app
+  keywords: [error, checkout]
+
+- id: errors-inventory-80
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 80 }
+  drive: { path: /inventory, method: GET, count: 12 }
+  alert: "Inventory endpoint failing most requests with HTTP 500"
+  expectedRootCause: "injected error rate on inventory"
+  expectedComponent: demo-app
+  keywords: [error, inventory]
+
+- id: errors-checkout-20
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 20 }
+  drive: { path: /checkout, method: POST, count: 15 }
+  alert: "Intermittent 5xx errors on checkout, ~1 in 5 failing"
+  expectedRootCause: "injected intermittent error rate on checkout"
+  expectedComponent: demo-app
+  keywords: [error]
+
+- id: errors-checkout-100-b
+  faultType: error-rate
+  endpoint: /faults/error-rate
+  params: { pct: 100 }
+  drive: { path: /checkout, method: POST, count: 8 }
+  alert: "Complete checkout outage, all requests error"
+  expectedRootCause: "injected error rate causing a full checkout outage"
+  expectedComponent: demo-app
+  keywords: [error, checkout]

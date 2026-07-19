@@ -1,5 +1,6 @@
 package dev.copilot.core.trace;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -8,7 +9,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * The full trace of one agent investigation: every LLM call and tool call, in order. Accumulated
  * live during a run, then persisted to a {@link TraceStore}. Powers the approval-UI trace viewer
  * and the postmortem agent's timeline. Thread-safe for concurrent appends.
+ *
+ * <p>{@code @JsonAutoDetect} exposes the private fields to Jackson so the {@code /traces/{id}}
+ * endpoints serialize the full trace (its accessors are record-style, not JavaBean getters).
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE)
 public class AgentTrace {
 
     private final String traceId;

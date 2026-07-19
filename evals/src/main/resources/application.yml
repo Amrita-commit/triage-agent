@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: evals
+  main:
+    web-application-type: none   # a CLI runner, not a web server
+
+demo-app:
+  url: ${DEMO_APP_URL:http://localhost:8080}
+
+diagnostics:
+  url: ${DIAGNOSTICS_AGENT_URL:http://localhost:8100}
+
+evals:
+  scenarios-dir: ${EVALS_SCENARIOS_DIR:evals/scenarios}
+  results-dir: ${EVALS_RESULTS_DIR:evals/results}
+  pass-threshold: 0.6
+
+logging:
+  level:
+    dev.copilot: INFO
+  pattern:
+    console: "%d{HH:mm:ss} %-5level %logger{20} - %msg%n"

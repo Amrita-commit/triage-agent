@@ -23,8 +23,8 @@ abstraction layer (`copilot-core`) means the same code later points at real AWS
 | 3 | Orchestrator (classify → delegate → merge) + infra/drift agent + `terraform-mcp` (drift detection) | ✅ implemented¹ |
 | 4 | Remediation agent (diff proposals) + approval UI + human-gated branch/PR creation | ✅ implemented¹ |
 | 5 | Postmortem agent — timeline from traces, root cause, prevention → Markdown in `docs/incidents/` | ✅ implemented¹ |
-| 6 | Eval harness | ⏳ next |
-| 7 | Observability, docs, polish | ⬜ |
+| 6 | Eval harness — 20 YAML fault scenarios, runner scores root-cause/cost/tool-calls → Markdown scorecard | ✅ implemented¹ |
+| 7 | Observability, docs, polish | ⏳ next |
 | 8 | AWS deployment mapping (stub only) | ⬜ |
 
 ---
@@ -224,6 +224,31 @@ orchestrated findings + agent traces into a Markdown postmortem written to
 drift, the approved remediation diff, and prevention items. The narrative gracefully degrades — if
 the LLM call fails (e.g. no API credit), the postmortem is still produced from the structured facts,
 so the timeline and evidence are never lost.
+
+## eval harness (Phase 6)
+
+[`evals/scenarios/`](evals/scenarios/) holds 20 YAML fault scenarios (latency, error-rate,
+memory-leak, with varied phrasing). The runner resets the demo app, injects each fault, drives
+traffic, runs the diagnostics pipeline, and scores **root-cause accuracy** (keyword match against the
+hypothesis), **tool-call count**, **token cost**, and **time-to-diagnosis** — then writes a Markdown
+scorecard to [`evals/results/`](evals/results/). Runs unattended with one command (needs the stack
+up + Anthropic credits):
+
+```bash
+docker compose run --rm evals        # -> evals/results/scorecard-latest.md
+```
+
+A scenario looks like:
+```yaml
+- id: latency-checkout-3000
+  faultType: latency
+  endpoint: /faults/latency
+  params: { ms: 3000 }
+  drive: { path: /checkout, method: POST, count: 8 }
+  alert: "P95 latency on checkout > 2s"
+  expectedComponent: demo-app
+  keywords: [latency, checkout]
+```
 
 ## Repository layout
 
